@@ -14,10 +14,10 @@ struct Args {
     #[arg(long, help = "kind of process that want to execute (get_files_information,cpus,ram,mounting_path)")]
     stats: String,
 
-    #[arg(short, long, help = "path that will be listed",default_value=".")]
+    #[arg(short, long, help = "path that will be listed should be use when stats: get_files_information",default_value=".")]
     path: String,
 
-    #[arg(short,long, help = "format size that will be printed (MB/GB/TB)",default_value="GB")]
+    #[arg(short,long, help = "format size that will be printed (MB/GB/TB). should be use when stats: get_files_information",default_value="GB")]
     file_format: String,
 }
 
