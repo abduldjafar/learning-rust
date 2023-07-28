@@ -1,0 +1,13 @@
+pub mod data_sources;
+
+
+use data_sources::{initialization::Initialization, data_sources::Datasource};
+
+#[tokio::main]
+async fn main() -> mongodb::error::Result<()> {
+    let db = Initialization::get("mongo");
+    let result = db.get_user("abdul@gmail.com".to_string()).await?;
+
+
+    Ok(())
+}
