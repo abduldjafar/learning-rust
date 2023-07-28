@@ -23,7 +23,7 @@ impl MongoSource {
         &self,
         table: Table,
     ) -> Result<mongodb::Collection<Document>, CustomError> {
-        let conn = connection().await?;
+        let conn = self.connection().await?;
         let database_name = match Database::DapoerPoetri {
             Database::DapoerPoetri => "dapoer-poetri",
         };
@@ -32,16 +32,18 @@ impl MongoSource {
         };
         Ok(conn.database(database_name).collection(collection_name))
     }
+
+    async fn connection(&self) -> Result<Client, CustomError> {
+        let client_uri =
+            env::var("MONGODB_URI").expect("You must set the MONGODB_URI environment var!");
+        let client_options = ClientOptions::parse(client_uri).await?;
+        let client = Client::with_options(client_options)?;
+    
+        Ok(client)
+    }
 }
 
-async fn connection() -> Result<Client, CustomError> {
-    let client_uri =
-        env::var("MONGODB_URI").expect("You must set the MONGODB_URI environment var!");
-    let client_options = ClientOptions::parse(client_uri).await?;
-    let client = Client::with_options(client_options)?;
 
-    Ok(client)
-}
 
 #[async_trait]
 impl Datasource for MongoSource {
