@@ -1,9 +1,10 @@
 use super::{data_sources::Datasource, User};
 use crate::custom_error::CustomError;
 use async_trait::async_trait;
+use futures::{StreamExt, TryStreamExt};
 use mongodb::{
     bson::{self, doc, oid::ObjectId, Document},
-    options::{ClientOptions, FindOneOptions},
+    options::{ClientOptions, FindOneOptions, FindOptions},
     Client,
 };
 use std::env;
@@ -64,8 +65,21 @@ impl Datasource for MongoSource {
         }
     }
 
-    async fn get_users(&self) -> Vec<User> {
-        todo!()
+    async fn get_users(&self) -> Result<Vec<User>,CustomError>{
+        let mut vector: Vec<User> = Vec::new();
+        let collection = self.get_collection(Table::User).await?;
+        let mut options = FindOptions::builder().build();
+        options.limit = Some(100);
+        options.skip = Some(0);
+        
+        let mut cursor = collection.find(None, options).await?;
+
+        while let Some(doc) = cursor.try_next().await?{
+            let data:User = bson::from_document(doc).unwrap();
+            vector.push(data);
+        }
+        Ok(vector)
+
     }
 
     async fn add_user(&self, user: User) -> Result<(), CustomError> {

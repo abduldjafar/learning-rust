@@ -17,7 +17,17 @@ async fn get_user_by_id(path: web::Path<String>) -> HttpResponse {
         Err(err) => HttpResponse::InternalServerError().body(err.to_string()),
     }
 }
+#[get("/users")]
+async fn get_users() ->HttpResponse {
+    let db = Initialization::get("mongo");
+    let result = db.get_users().await;
 
+    match result {
+        Ok(users) => HttpResponse::Ok().json(users),
+        Err(err) => HttpResponse::InternalServerError().body(err.to_string()),
+    }
+
+}
 #[post("/users")]
 pub async fn create_user(new_user: Json<User>) -> HttpResponse {
     let db = Initialization::get("mongo");

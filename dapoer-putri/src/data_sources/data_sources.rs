@@ -5,11 +5,13 @@ use crate::custom_error::CustomError;
 use super::User;
 use super::mongo_source::MongoSource;
 use async_trait::async_trait;
+use futures::stream::{StreamExt, TryStreamExt};
+
 
 #[async_trait]
 pub trait Datasource {
     async fn get_user(&self,id:String) -> Result<Option<User>,CustomError>;
-    async fn get_users(&self) -> Vec<User>;
+    async fn get_users(&self) -> Result<Vec<User>,CustomError>;
     async fn add_user(&self,user:User) -> Result<(),CustomError>;
     async fn delete_user(&self);
 }
@@ -30,8 +32,10 @@ impl Datasource for DataSourceTypes {
         }
     }
 
-    async fn get_users(&self) -> Vec<User> {
-        todo!()
+    async fn get_users(&self) -> Result<Vec<User>,CustomError> {
+        match *self {
+            DataSourceTypes::MongoSource(ref mongo_source) => mongo_source.get_users().await
+        }
     }
 
     async fn add_user(&self,user: User) -> Result<(),CustomError> {
