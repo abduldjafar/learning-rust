@@ -5,7 +5,7 @@ use data_sources::{data_sources::Datasource, initialization::Initialization};
 
 use crate::data_sources;
 
-#[get("/users/{user_id}")] // <- define path parameters
+#[get("/api/v1/users/{user_id}")] // <- define path parameters
 async fn get_user_by_id(path: web::Path<String>) -> HttpResponse {
     let db = Initialization::get("mongo");
 
@@ -17,7 +17,7 @@ async fn get_user_by_id(path: web::Path<String>) -> HttpResponse {
         Err(err) => HttpResponse::InternalServerError().body(err.to_string()),
     }
 }
-#[get("/users")]
+#[get("/api/v1/users")]
 async fn get_users() ->HttpResponse {
     let db = Initialization::get("mongo");
     let result = db.get_users().await;
@@ -28,7 +28,7 @@ async fn get_users() ->HttpResponse {
     }
 
 }
-#[post("/users")]
+#[post("/api/v1/users")]
 pub async fn create_user(new_user: Json<User>) -> HttpResponse {
     let db = Initialization::get("mongo");
 
