@@ -75,7 +75,8 @@ impl Datasource for MongoSource {
         let mut cursor = collection.find(None, options).await?;
 
         while let Some(doc) = cursor.try_next().await?{
-            let data:User = bson::from_document(doc).unwrap();
+            let mut data:User = bson::from_document(doc).unwrap();
+            data.password = "****".to_string();
             vector.push(data);
         }
         Ok(vector)

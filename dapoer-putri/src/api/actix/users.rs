@@ -38,6 +38,7 @@ pub async fn create_user(new_user: Json<User>) -> HttpResponse {
         address: new_user.address.to_owned(),
         email: new_user.email.to_owned(),
         gender: new_user.gender.to_owned(),
+        password: new_user.password.to_owned()
     };
 
     let user_detail = db.add_user(data).await;
