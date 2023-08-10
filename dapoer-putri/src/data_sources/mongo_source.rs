@@ -45,7 +45,6 @@ impl MongoSource {
 }
 
 
-
 #[async_trait]
 impl Datasource for MongoSource {
     async fn get_user(&self, id: String) -> Result<Option<User>, CustomError> {
