@@ -1,21 +1,20 @@
 def generate(table):
     query = f"""
-        CREATE or replace table  `L1_Sales.{table}` AS
+        CREATE or replace table  `Backup_Sales.{table}` AS
         SELECT *
-        FROM `L1_Sales.{table}`
-        FOR SYSTEM_TIME AS OF TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 3 HOUR);
+        FROM `L1_Sales.{table}`;
     """
 
     return query
 
 tables = [{
-  "table_id": "ref_consodwh_deliverytime"
-}, {
   "table_id": "ref_consodwh_monitoringmppkpi2022"
 }, {
   "table_id": "ref_consodwh_monitoringmppkpi2023"
 }, {
   "table_id": "ref_consodwh_src_raport"
+}, {
+  "table_id": "ref_consodwh_src_stock_epm"
 }, {
   "table_id": "ref_consodwh_src_stock_subdist"
 }, {
@@ -39,10 +38,6 @@ tables = [{
 }, {
   "table_id": "ref_consodwh_tblt_dailysales"
 }, {
-  "table_id": "ref_consodwh_tblt_dailysales_temp"
-}, {
-  "table_id": "ref_consodwh_tblt_dailysales_uji"
-}, {
   "table_id": "ref_consodwh_tblt_monthlysla"
 }, {
   "table_id": "ref_consodwh_tblt_mpo_new_format"
@@ -57,6 +52,5 @@ tables = [{
 }, {
   "table_id": "ref_consoreporting_ms_subdist_daily"
 }]
-
 for data in tables:
     print(generate(data["table_id"]))
