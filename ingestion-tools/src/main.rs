@@ -60,7 +60,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 
             let join_handle = tokio::spawn(async move {
-                let process = process_batch(&batch_clone, index_clone,prefix_output_file_clone).await;
+                let process = process_batch(batch_clone, index_clone,prefix_output_file_clone).await;
                 match process {
                     Ok(process) => process,
                     Err(err) =>println!("{}",err)
@@ -76,7 +76,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     if !batch.is_empty() {
         let join_handle = tokio::spawn(async move {
-            let process = process_batch(&batch, batch_index,args.prefix_output_file).await;
+            let process = process_batch(batch, batch_index,args.prefix_output_file).await;
             match process {
                 Ok(process) => process,
                 Err(err) =>println!("{}",err)
@@ -93,27 +93,27 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 
-async fn process_batch(batch: &[mongodb::bson::Document], batch_index: i32,output_prefix:String) ->  Result<(),Box<dyn std::error::Error>> {
+async fn process_batch(batch: Vec<mongodb::bson::Document>, batch_index: i32,output_prefix:String) ->  Result<(),Box<dyn std::error::Error>> {
     let mut join_handles: Vec<JoinHandle<()>> = Vec::new();
 
+    /** 
     batch.iter().for_each(|document| {
         let document_clone = document.clone();
         let prefix_output_file = output_prefix.clone();
 
-        let process = tokio::spawn(async move {
-            let result = process_document(&document_clone, batch_index,prefix_output_file.as_str()).await ;
+        let result = process_document(&document_clone, batch_index,prefix_output_file.as_str()).await ;
             match result {
                 Ok(result) => result,
                 Err(err) =>  println!("{}", err),
             }
-        });
 
-        join_handles.push(process);
+        
     });
+    */
 
-    for join_handle in join_handles {
-        join_handle.await?;
-    }
+    println!("{}",batch.len());
+
+
 
     Ok(())
 }
@@ -121,7 +121,6 @@ async fn process_batch(batch: &[mongodb::bson::Document], batch_index: i32,outpu
 async fn process_document(document: &mongodb::bson::Document, batch_index: i32,output_prefix:&str) -> Result<(),Box<dyn std::error::Error>>{
     //let mut file = File::create(format!("{}_{}.json", output_prefix, batch_index))?;
     let document_str  = serde_json::to_string(document)?;
-    print!("{}",document_str);
     //writeln!(file, "{}", document_str)?;
 
     Ok(())
