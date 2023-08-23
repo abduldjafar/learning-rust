@@ -1,26 +1,44 @@
-mod custom_error;
-
 use std::env;
 use std::fs::File;
 use std::io::Write;
 
+use clap::Parser;
 use futures::{stream::StreamExt, TryStreamExt};
 use mongodb::{bson::Document, options::ClientOptions, Client, Collection};
-use rayon::prelude::*;
+use tokio::task::JoinHandle;
 
-const BATCH_SIZE: usize = 1000;
-const OUTPUT_FILE: &str = "output"; // Change this to your desired output file
+/// CLI arguments structure
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    /// Page number
+    #[arg(short, long, help = "mongodb database")]
+    database: String,
+
+    #[arg(short, long, help = "mongodb collection")]
+    collection: String,
+
+    #[arg(short, long, help = "prefix file name for output")]
+    prefix_output_file: String,
+
+    #[arg(short, long, help = "batch size data for processing")]
+    batch_size: usize,
+    
+}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+
+    let args = Args::parse();
+
     let client_uri =
         env::var("MONGODB_URI").expect("You must set the MONGODB_URI environment var!");
     let client_options = ClientOptions::parse(client_uri).await?;
     let client = Client::with_options(client_options)?;
 
     let conn: Collection<Document> = client
-        .database("sample_airbnb")
-        .collection("listingsAndReviews");
+        .database(args.database.as_str())
+        .collection(args.collection.as_str());
 
     let mut cursor = conn.find(None, None).await?.into_stream();
 
@@ -28,56 +46,63 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut batch = Vec::new();
     let mut batch_index = 0;
 
+    let mut join_handles: Vec<JoinHandle<()>> = Vec::new();
+
     while let Some(doc) = cursor.next().await {
-        match doc {
-            Ok(document) => {
-                // Add document to the current batch
-                batch.push(document);
+        let document = doc?;
 
-                // If batch size is reached, process it in parallel
-                if batch.len() >= BATCH_SIZE {
-                    // Spawn a Tokio task to process the batch
-                    let batch_clone = batch.clone();
-                    let index_clone = batch_index;
+        batch.push(document);
 
-                    tokio::spawn(async move {
-                        process_batch(&batch_clone, index_clone).await;
-                    });
+        if batch.len() >= args.batch_size {
+            let batch_clone = batch.clone();
+            let index_clone = batch_index;
+            let prefix_output_file_clone = args.prefix_output_file.clone();
 
-                    batch.clear();
-                    batch_index += 1;
-                }
-            }
-            Err(err) => {
-                eprintln!("Error fetching document: {:?}", err);
-            }
+
+            let join_handle = tokio::spawn(async move {
+                let _ = process_batch(&batch_clone, index_clone,prefix_output_file_clone).await;
+            });
+
+            join_handles.push(join_handle);
+
+            batch.clear();
+            batch_index += 1;
         }
     }
 
     if !batch.is_empty() {
-        tokio::spawn(async move {
-            process_batch(&batch, batch_index).await;
+        let join_handle = tokio::spawn(async move {
+            let _ = process_batch(&batch, batch_index,args.prefix_output_file).await;
         });
+        join_handles.push(join_handle);
+    }
+
+    for join_handle in join_handles {
+        join_handle.await?;
     }
 
     Ok(())
 }
 
-async fn process_batch(batch: &[mongodb::bson::Document], batch_index: i32) {
-    // Use Rayon to parallelize document processing within the batch
-    batch.par_iter().for_each(|document| {
-        process_document(document, batch_index);
+
+async fn process_batch(batch: &[mongodb::bson::Document], batch_index: i32,output_prefix:String) ->  Result<(),Box<dyn std::error::Error>> {
+
+    batch.iter().for_each(|document| {
+        let document_clone = document.clone();
+        let prefix_output_file = output_prefix.clone();
+
+        tokio::spawn(async move {
+            let _ = process_document(&document_clone, batch_index,prefix_output_file.as_str()).await ;
+        });
     });
+
+    Ok(())
 }
 
-fn process_document(document: &mongodb::bson::Document, batch_index: i32) {
-    // Open the output file in append mode
-    if let Ok(mut file) = File::create(format!("{}_{}.json", OUTPUT_FILE, batch_index)) {
-        // Write the document content to the file
-        if let Ok(document_str) = serde_json::to_string(document) {
-            if let Err(err) = writeln!(file, "{}", document_str) {
-                eprintln!("Error writing to file: {:?}", err);
-            }
-        }
-    }
+async fn process_document(document: &mongodb::bson::Document, batch_index: i32,output_prefix:&str) -> Result<(),Box<dyn std::error::Error>>{
+    let mut file = File::create(format!("{}_{}.json", output_prefix, batch_index))?;
+    let document_str  = serde_json::to_string(document)?;
+    writeln!(file, "{}", document_str)?;
+
+    Ok(())
 }
