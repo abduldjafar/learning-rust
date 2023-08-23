@@ -40,7 +40,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .database(args.database.as_str())
         .collection(args.collection.as_str());
 
-    let mut cursor = conn.find(None, None).await?.into_stream();
+    let mut cursor = conn.find(None, None).await?;
+
 
     // Create a vector to hold documents for each batch
     let mut batch = Vec::new();
