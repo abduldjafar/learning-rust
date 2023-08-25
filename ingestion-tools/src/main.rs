@@ -5,7 +5,6 @@ use mongodb::{
     bson::{self, oid::ObjectId, Document}, Collection,
 };
 use std::{env, fs::File};
-use tokio::task::JoinHandle;
 use std::io::Write;
 
 /// ... (Args struct and other imports)
