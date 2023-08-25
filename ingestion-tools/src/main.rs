@@ -119,8 +119,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let splitted_keys = get_split_keys(db, db_clone, collection_clone,args.batch_size_in_mb).await?;
 
-    let mut join_handles: Vec<JoinHandle<()>> = Vec::new();
+    let mut tasks = Vec::new();
+    
     let mut index = 0;
+
     for key in splitted_keys {
         let conn_clone = conn.clone();
         let output_clone = args.prefix_output_file.clone();
@@ -132,12 +134,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 Err(err) => println!("error:{}", err),
             }
         });
-        join_handles.push(join_handle);
+        tasks.push(join_handle);
         index+=1;
     }
 
-    for join_handle in join_handles {
-        join_handle.await?;
+    for task in tasks {
+        task.await?;
     }
 
     Ok(())
