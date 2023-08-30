@@ -4,8 +4,10 @@ use futures::StreamExt;
 use mongodb::{
     bson::{self, oid::ObjectId, Document}, Collection,
 };
+use rayon::prelude::*;
 use std::{env, fs::File};
 use std::io::Write;
+
 
 /// ... (Args struct and other imports)
 /// CLI arguments structure
@@ -33,7 +35,7 @@ async fn get_split_keys(
     collection: String,
     batch_size_in_mb: i32,
 ) -> Result<Vec<(ObjectId, ObjectId)>, Box<dyn std::error::Error>> {
-    // Construct the splitVector command document
+
     let split_vector_command = doc! {
         "splitVector": format!("{}.{}", database, collection),
         "keyPattern": doc! { "_id": Bson::Int32(1) },
@@ -47,11 +49,10 @@ async fn get_split_keys(
     let unwrapped_keys: Option<Vec<ObjectId>> = option_bson.and_then(|bson| {
         bson.as_array().map(|array| {
             array
-                .iter()
+                .par_iter() // Use par_iter() to iterate in parallel
                 .filter_map(|item| {
                     if let Bson::Document(doc) = item {
-                        let object_id = doc.get("_id").unwrap().as_object_id();
-                        object_id
+                        doc.get("_id").and_then(Bson::as_object_id)
                     } else {
                         None
                     }
@@ -61,18 +62,15 @@ async fn get_split_keys(
     });
 
     let unwrapped_keys = unwrapped_keys.unwrap_or_default();
-    let mut tuple_vector = Vec::new();
 
-    for (index, _) in unwrapped_keys.iter().enumerate() {
-        match unwrapped_keys.get(index + 1) {
-            Some(next_key) => {
-                tuple_vector.push((unwrapped_keys[index].clone(), next_key.clone()));
-            }
-            None => break,
-        }
-    }
+    let tuple_vector: Vec<(ObjectId, ObjectId)> = unwrapped_keys
+        .par_iter()
+        .zip(unwrapped_keys.par_iter().skip(1))
+        .map(|(&current_key, &next_key)| (current_key.clone(), next_key.clone()))
+        .collect();
 
     Ok(tuple_vector)
+
 }
 
 async fn get_mongo_datas(
