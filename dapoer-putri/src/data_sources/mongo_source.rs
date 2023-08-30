@@ -1,7 +1,7 @@
 use super::{data_sources::Datasource, User};
 use crate::custom_error::CustomError;
 use async_trait::async_trait;
-use futures::{StreamExt, TryStreamExt};
+use futures::{TryStreamExt};
 use mongodb::{
     bson::{self, doc, oid::ObjectId, Document},
     options::{ClientOptions, FindOneOptions, FindOptions},
