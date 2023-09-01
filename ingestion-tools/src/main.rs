@@ -6,7 +6,7 @@ use mongo_operation::{get_mongo_datas, get_split_keys};
 use mongodb::{bson::Document, Collection};
 use std::env;
 use tokio::sync::Semaphore; // Import Semaphore from Tokio
-
+use env_logger::{Builder, Target};
 use std::sync::Arc; // Import Arc for reference counting
 
 /// ... (Args struct and other imports)
@@ -33,8 +33,11 @@ struct Args {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    env_logger::init();
-    
+    let mut builder = Builder::from_default_env();
+    builder.target(Target::Stdout);
+
+    builder.init();
+
     let args = Args::parse();
 
     let client_uri =
