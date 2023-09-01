@@ -36,7 +36,6 @@ impl StorageProvider for GcsStorage {
     ) -> Result<(), Box<dyn std::error::Error>> {
         // Implement GCS write logic here
 
-        let permit = semaphore.acquire().await.unwrap();
 
         let upload_type = UploadType::Simple(Media::new(path.clone().to_string()));
         self.client
@@ -51,7 +50,6 @@ impl StorageProvider for GcsStorage {
             .await?;
 
         println!("Writing to GCS path: {}", path);
-        drop(permit);
         Ok(())
     }
 }
