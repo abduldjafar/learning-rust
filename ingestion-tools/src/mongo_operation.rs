@@ -15,7 +15,6 @@ pub async fn get_split_keys(
     collection: String,
     batch_size_in_mb: i32,
 ) -> Result<Vec<(ObjectId, ObjectId)>, Box<dyn std::error::Error>> {
-
     let split_vector_command = doc! {
         "splitVector": format!("{}.{}", database, collection),
         "keyPattern": doc! { "_id": Bson::Int32(1) },
@@ -24,7 +23,7 @@ pub async fn get_split_keys(
     };
 
     log::info!("getting partition keys...");
-    
+
     let result = db.run_command(split_vector_command, None).await?;
     let option_bson = result.get("splitKeys");
 
@@ -62,8 +61,6 @@ pub async fn get_mongo_datas(
     output: String,
     index: i32,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    
-
     let query = doc! {
         "_id": {
             "$gte": tuple_object_id.0,
@@ -102,7 +99,9 @@ pub async fn get_mongo_datas(
     log::info!("===================================================================");
     log::info!(
         "write to gs://{}data/from_rust/{}_{}.json Done",
-        "quipper-fact-dev", &output, index
+        "quipper-fact-dev",
+        &output,
+        index
     );
 
     Ok(())

@@ -2,12 +2,12 @@ mod mongo_operation;
 mod writer;
 
 use clap::Parser;
+use env_logger::{Builder, Target};
 use mongo_operation::{get_mongo_datas, get_split_keys};
 use mongodb::{bson::Document, Collection};
 use std::env;
-use tokio::sync::Semaphore; // Import Semaphore from Tokio
-use env_logger::{Builder, Target};
-use std::sync::Arc; // Import Arc for reference counting
+use std::sync::Arc;
+use tokio::sync::Semaphore; // Import Semaphore from Tokio // Import Arc for reference counting
 
 /// ... (Args struct and other imports)
 /// CLI arguments structure
