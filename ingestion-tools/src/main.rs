@@ -2,7 +2,7 @@ mod mongo_operation;
 mod writer;
 
 use clap::Parser;
-use env_logger::{Builder, Target};
+use env_logger;
 use mongo_operation::{get_mongo_datas, get_split_keys};
 use mongodb::{bson::Document, Collection};
 use std::env;
@@ -33,10 +33,7 @@ struct Args {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut builder = Builder::from_default_env();
-    builder.target(Target::Stdout);
-
-    builder.init();
+    env_logger::init();
 
     let args = Args::parse();
 
