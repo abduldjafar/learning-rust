@@ -2,12 +2,17 @@ mod mongo_operation;
 mod writer;
 
 use clap::Parser;
-use env_logger;
+use env_logger::Builder;
 use mongo_operation::{get_mongo_datas, get_split_keys};
+use chrono::Local;
 use mongodb::{bson::Document, Collection};
 use std::env;
 use std::sync::Arc;
-use tokio::sync::Semaphore; // Import Semaphore from Tokio // Import Arc for reference counting
+use tokio::sync::Semaphore;
+use log::LevelFilter;
+use std::io::Write;
+
+ // Import Semaphore from Tokio // Import Arc for reference counting
 
 /// ... (Args struct and other imports)
 /// CLI arguments structure
@@ -33,7 +38,17 @@ struct Args {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    env_logger::init();
+    Builder::new()
+        .format(|buf, record| {
+            writeln!(buf,
+                "{} [{}] - {}",
+                Local::now().format("%Y-%m-%dT%H:%M:%S"),
+                record.level(),
+                record.args()
+            )
+        })
+        .filter(None, LevelFilter::Info)
+        .init();
 
     let args = Args::parse();
 
