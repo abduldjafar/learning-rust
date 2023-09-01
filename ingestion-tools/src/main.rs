@@ -15,7 +15,6 @@ use std::sync::Arc; // Import Arc and Mutex
 use tokio::sync::Semaphore;
 use writer::{DataWriter, GcsStorage};
 
-
 /// ... (Args struct and other imports)
 /// CLI arguments structure
 #[derive(Parser, Debug)]
@@ -78,7 +77,7 @@ async fn main() -> Result<(), custom_error::CustomError> {
         bucket: String::from("quipper-fact-dev"),
         client: Client::new(config),
     };
-    
+
     let writer = Arc::new(DataWriter::new(gcs_storage));
 
     for key in splitted_keys {
@@ -99,8 +98,8 @@ async fn main() -> Result<(), custom_error::CustomError> {
                     &output,
                 )
                 .await
-
         });
+
         tasks.push(join_handle);
         index += 1;
     }
