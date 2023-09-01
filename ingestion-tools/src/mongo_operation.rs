@@ -2,13 +2,12 @@ use bson::{doc, Bson};
 use futures::StreamExt;
 use google_cloud_storage::client::{Client, ClientConfig};
 use mongodb::{
-    bson::{self, oid::ObjectId, Document}, Collection,
+    bson::{self, oid::ObjectId, Document},
+    Collection,
 };
 use rayon::prelude::*;
 
-use crate::writer::{ DataWriter, GcsStorage};
-
-
+use crate::writer::{DataWriter, GcsStorage};
 
 pub async fn get_split_keys(
     db: mongodb::Database,
@@ -16,7 +15,6 @@ pub async fn get_split_keys(
     collection: String,
     batch_size_in_mb: i32,
 ) -> Result<Vec<(ObjectId, ObjectId)>, Box<dyn std::error::Error>> {
-
     let split_vector_command = doc! {
         "splitVector": format!("{}.{}", database, collection),
         "keyPattern": doc! { "_id": Bson::Int32(1) },
@@ -53,16 +51,14 @@ pub async fn get_split_keys(
 
     println!("getting partition keys Done");
 
-
     Ok(tuple_vector)
-
 }
 
 pub async fn get_mongo_datas(
     tuple_object_id: (ObjectId, ObjectId),
     conn: Collection<Document>,
     output: String,
-    index: i32
+    index: i32,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let query = doc! {
         "_id": {
@@ -71,16 +67,16 @@ pub async fn get_mongo_datas(
         }
     };
 
-    let mut datas: String = Default::default() ;
+    let mut datas: String = Default::default();
     let config = ClientConfig::default().with_auth().await?;
-        
-    let gcs_storage = GcsStorage{
-        bucket:String::from("quipper-fact-dev"),
-        client:Client::new(config),
+
+    let gcs_storage = GcsStorage {
+        bucket: String::from("quipper-fact-dev"),
+        client: Client::new(config),
     };
 
     let writer = DataWriter::new(gcs_storage);
-    
+
     let mut cursor = conn.find(query, None).await?;
 
     println!("processing batch {:?}...", index);
@@ -92,11 +88,18 @@ pub async fn get_mongo_datas(
         datas.push_str(&format!("{}\n", json_str));
     }
 
-    writer.write_data(&format!("data/from_rust/{}_{}.json",&output,index), &datas).await?;
+    writer
+        .write_data(
+            &format!("data/from_rust/{}_{}.json", &output, index),
+            &datas,
+        )
+        .await?;
 
     println!("===================================================================");
-    println!("write to gs://{}data/from_rust/{}_{}.json Done","quipper-fact-dev",&output,index);
-
+    println!(
+        "write to gs://{}data/from_rust/{}_{}.json Done",
+        "quipper-fact-dev", &output, index
+    );
 
     Ok(())
 }

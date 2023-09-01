@@ -7,26 +7,35 @@ use std::fs::File;
 use std::io::Write;
 use tokio::sync::Semaphore;
 
-
 const MAX_CONCURRENT_WRITES: usize = 100; // Change this as needed
 
 // Define a trait for the storage provider
 #[async_trait]
 pub trait StorageProvider {
-    async fn write(&self, path: &str, data: &str, semaphore: &Semaphore) -> Result<(), Box<dyn std::error::Error>>;
+    async fn write(
+        &self,
+        path: &str,
+        data: &str,
+        semaphore: &Semaphore,
+    ) -> Result<(), Box<dyn std::error::Error>>;
 }
 
 // Implement GCS storage
-pub struct GcsStorage{
+pub struct GcsStorage {
     pub bucket: String,
-    pub client: Client
+    pub client: Client,
 }
 
 #[async_trait]
 impl StorageProvider for GcsStorage {
-    async fn write(&self, path: &str, data: &str,semaphore: &Semaphore) -> Result<(), Box<dyn std::error::Error>> {
+    async fn write(
+        &self,
+        path: &str,
+        data: &str,
+        semaphore: &Semaphore,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         // Implement GCS write logic here
-        
+
         let permit = semaphore.acquire().await.unwrap();
 
         let upload_type = UploadType::Simple(Media::new(path.clone().to_string()));
@@ -52,7 +61,12 @@ pub struct LocalStorage;
 
 #[async_trait]
 impl StorageProvider for LocalStorage {
-    async fn write(&self, path: &str, data: &str, semaphore: &Semaphore) -> Result<(), Box<dyn std::error::Error>> {
+    async fn write(
+        &self,
+        path: &str,
+        data: &str,
+        semaphore: &Semaphore,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         // Implement local file write logic here
         let permit = semaphore.acquire().await.unwrap();
 
@@ -82,7 +96,7 @@ impl<T: StorageProvider> DataWriter<T> {
     ) -> Result<(), Box<dyn std::error::Error>> {
         let semaphore = Semaphore::new(MAX_CONCURRENT_WRITES);
 
-        self.storage.write(path, data,&semaphore).await?;
+        self.storage.write(path, data, &semaphore).await?;
         Ok(())
     }
 }
