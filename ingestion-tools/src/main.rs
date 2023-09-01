@@ -7,6 +7,9 @@ use mongodb::{
     bson::Document, Collection,
 };
 use std::env;
+use tokio::sync::Semaphore; // Import Semaphore from Tokio
+
+use std::sync::Arc; // Import Arc for reference counting
 
 
 /// ... (Args struct and other imports)
@@ -45,7 +48,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let db_clone = args.database.clone();
     let collection_clone = args.collection.clone();
 
-    let splitted_keys = get_split_keys(db, db_clone, collection_clone,args.batch_size_in_mb).await?;
+    let splitted_keys = get_split_keys(db, db_clone, collection_clone, args.batch_size_in_mb).await?;
+
+    let semaphore = Arc::new(Semaphore::new(8)); 
 
     let mut tasks = Vec::new();
     
@@ -54,16 +59,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     for key in splitted_keys {
         let conn_clone = conn.clone();
         let output_clone = args.prefix_output_file.clone();
+        let semaphore_clone = semaphore.clone(); // Clone the semaphore for each task
 
         let join_handle = tokio::spawn(async move {
-            let result = get_mongo_datas(key, conn_clone,output_clone,index).await;
+            let _permit = semaphore_clone.acquire().await.expect("Semaphore error");
+            let result = get_mongo_datas(key, conn_clone, output_clone, index).await;
             match result {
                 Ok(result) => result,
-                Err(err) => println!("error:{}", err),
+                Err(err) => println!("error: {}", err),
             }
         });
         tasks.push(join_handle);
-        index+=1;
+        index += 1;
     }
 
     for task in tasks {
@@ -72,3 +79,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
+
+
+
