@@ -1,18 +1,20 @@
+pub mod custom_error;
 mod mongo_operation;
 mod writer;
 
+use chrono::Local;
 use clap::Parser;
 use env_logger::Builder;
+use google_cloud_storage::client::{Client, ClientConfig};
+use log::LevelFilter;
 use mongo_operation::{get_mongo_datas, get_split_keys};
-use chrono::Local;
 use mongodb::{bson::Document, Collection};
 use std::env;
-use std::sync::Arc;
-use tokio::sync::Semaphore;
-use log::LevelFilter;
 use std::io::Write;
+use std::sync::Arc; // Import Arc and Mutex
+use tokio::sync::Semaphore;
+use writer::{DataWriter, GcsStorage};
 
- // Import Semaphore from Tokio // Import Arc for reference counting
 
 /// ... (Args struct and other imports)
 /// CLI arguments structure
@@ -37,10 +39,11 @@ struct Args {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() -> Result<(), custom_error::CustomError> {
     Builder::new()
         .format(|buf, record| {
-            writeln!(buf,
+            writeln!(
+                buf,
                 "{} [{}] - {}",
                 Local::now().format("%Y-%m-%dT%H:%M:%S"),
                 record.level(),
@@ -70,26 +73,40 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut tasks = Vec::new();
 
     let mut index = 0;
+    let config = ClientConfig::default().with_auth().await?;
+    let gcs_storage = GcsStorage {
+        bucket: String::from("quipper-fact-dev"),
+        client: Client::new(config),
+    };
+    
+    let writer = Arc::new(DataWriter::new(gcs_storage));
 
     for key in splitted_keys {
         let conn_clone = conn.clone();
         let output_clone = args.prefix_output_file.clone();
-        let semaphore_clone = semaphore.clone(); // Clone the semaphore for each task
+        let semaphore_clone = semaphore.clone();
+        let writer_clone = writer.clone(); // Clone Arc<Mutex<DataWriter>> for each task
+
+        // Clone the semaphore for each task
 
         let join_handle = tokio::spawn(async move {
             let _permit = semaphore_clone.acquire().await.expect("Semaphore error");
-            let result = get_mongo_datas(key, conn_clone, output_clone, index).await;
-            match result {
-                Ok(result) => result,
-                Err(err) => println!("error: {}", err),
-            }
+            let output = get_mongo_datas(key, conn_clone, index).await?;
+
+            writer_clone
+                .write_data(
+                    &format!("data/from_rust/{}_{}.json", &output_clone, index),
+                    &output,
+                )
+                .await
+
         });
         tasks.push(join_handle);
         index += 1;
     }
 
     for task in tasks {
-        task.await?;
+        task.await??;
     }
 
     Ok(())

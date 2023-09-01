@@ -7,6 +7,8 @@ use std::fs::File;
 use std::io::Write;
 use tokio::sync::Semaphore;
 
+use crate::custom_error;
+
 const MAX_CONCURRENT_WRITES: usize = 8; // Change this as needed
 
 // Define a trait for the storage provider
@@ -17,7 +19,7 @@ pub trait StorageProvider {
         path: &str,
         data: &str,
         semaphore: &Semaphore,
-    ) -> Result<(), Box<dyn std::error::Error>>;
+    ) -> Result<(), custom_error::CustomError>;
 }
 
 // Implement GCS storage
@@ -33,7 +35,7 @@ impl StorageProvider for GcsStorage {
         path: &str,
         data: &str,
         semaphore: &Semaphore,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> Result<(), custom_error::CustomError> {
         // Implement GCS write logic here
 
         let permit = semaphore.acquire().await.unwrap();
@@ -66,7 +68,7 @@ impl StorageProvider for LocalStorage {
         path: &str,
         data: &str,
         semaphore: &Semaphore,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> Result<(), custom_error::CustomError> {
         // Implement local file write logic here
         let permit = semaphore.acquire().await.unwrap();
 
@@ -93,7 +95,7 @@ impl<T: StorageProvider> DataWriter<T> {
         &self,
         path: &str,
         data: &str,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> Result<(), custom_error::CustomError> {
         let semaphore = Semaphore::new(MAX_CONCURRENT_WRITES);
 
         self.storage.write(path, data, &semaphore).await?;
