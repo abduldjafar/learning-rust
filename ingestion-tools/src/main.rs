@@ -45,7 +45,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let splitted_keys =
         get_split_keys(db, db_clone, collection_clone, args.batch_size_in_mb).await?;
 
-    let semaphore = Arc::new(Semaphore::new(20));
+    let semaphore = Arc::new(Semaphore::new(30));
 
     let mut tasks = Vec::new();
 
