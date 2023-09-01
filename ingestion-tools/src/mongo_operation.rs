@@ -1,3 +1,4 @@
+use crate::custom_error;
 use bson::{doc, Bson};
 use futures::StreamExt;
 use mongodb::{
@@ -5,15 +6,13 @@ use mongodb::{
     Collection,
 };
 use rayon::prelude::*;
-use crate::custom_error;
-
 
 pub async fn get_split_keys(
     db: mongodb::Database,
     database: String,
     collection: String,
     batch_size_in_mb: i32,
-) -> Result<Vec<(ObjectId, ObjectId)>,custom_error::CustomError > {
+) -> Result<Vec<(ObjectId, ObjectId)>, custom_error::CustomError> {
     let split_vector_command = doc! {
         "splitVector": format!("{}.{}", database, collection),
         "keyPattern": doc! { "_id": Bson::Int32(1) },
@@ -68,8 +67,6 @@ pub async fn get_mongo_datas(
 
     let mut datas: String = Default::default();
 
-    
-
     let mut cursor = conn.find(query, None).await?;
 
     log::info!("processing batch {:?}...", index);
@@ -80,7 +77,6 @@ pub async fn get_mongo_datas(
 
         datas.push_str(&format!("{}\n", json_str));
     }
-
 
     Ok(datas)
 }

@@ -84,9 +84,7 @@ async fn main() -> Result<(), custom_error::CustomError> {
         let conn_clone = conn.clone();
         let output_clone = args.prefix_output_file.clone();
         let semaphore_clone = semaphore.clone();
-        let writer_clone = writer.clone(); // Clone Arc<Mutex<DataWriter>> for each task
-
-        // Clone the semaphore for each task
+        let writer_clone = writer.clone(); 
 
         let join_handle = tokio::spawn(async move {
             let _permit = semaphore_clone.acquire().await.expect("Semaphore error");
