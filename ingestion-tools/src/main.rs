@@ -26,6 +26,9 @@ struct Args {
 
     #[arg(short, long, help = "batch size data for processing")]
     batch_size_in_mb: i32,
+
+    #[arg(short, long, help = "batch size data for processing")]
+    threads: usize,
 }
 
 #[tokio::main]
@@ -45,7 +48,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let splitted_keys =
         get_split_keys(db, db_clone, collection_clone, args.batch_size_in_mb).await?;
 
-    let semaphore = Arc::new(Semaphore::new(8));
+    let semaphore = Arc::new(Semaphore::new(args.threads));
 
     let mut tasks = Vec::new();
 
