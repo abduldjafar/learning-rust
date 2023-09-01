@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use google_cloud_storage::{
-    client::{Client, ClientConfig},
+    client::Client,
     http::objects::upload::{Media, UploadObjectRequest, UploadType},
 };
 use std::fs::File;
@@ -15,17 +15,17 @@ pub trait StorageProvider {
 // Implement GCS storage
 pub struct GcsStorage{
     pub bucket: String,
+    pub client: Client
 }
 
 #[async_trait]
 impl StorageProvider for GcsStorage {
     async fn write(&self, path: &str, data: &str) -> Result<(), Box<dyn std::error::Error>> {
         // Implement GCS write logic here
-        let config = ClientConfig::default().with_auth().await?;
-        let client = Client::new(config);
+        
 
         let upload_type = UploadType::Simple(Media::new(path.clone().to_string()));
-        client
+        self.client
             .upload_object(
                 &UploadObjectRequest {
                     bucket: self.bucket.clone(),

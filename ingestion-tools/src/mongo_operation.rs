@@ -1,5 +1,6 @@
 use bson::{doc, Bson};
 use futures::StreamExt;
+use google_cloud_storage::client::{Client, ClientConfig};
 use mongodb::{
     bson::{self, oid::ObjectId, Document}, Collection,
 };
@@ -23,6 +24,7 @@ pub async fn get_split_keys(
         "maxChunkSize": batch_size_in_mb
     };
 
+    println!("getting partition keys...");
     let result = db.run_command(split_vector_command, None).await?;
     let option_bson = result.get("splitKeys");
 
@@ -49,6 +51,9 @@ pub async fn get_split_keys(
         .map(|(&current_key, &next_key)| (current_key.clone(), next_key.clone()))
         .collect();
 
+    println!("getting partition keys Done");
+
+
     Ok(tuple_vector)
 
 }
@@ -67,8 +72,11 @@ pub async fn get_mongo_datas(
     };
 
     let mut datas: String = Default::default() ;
+    let config = ClientConfig::default().with_auth().await?;
+        
     let gcs_storage = GcsStorage{
         bucket:String::from("quipper-fact-dev"),
+        client:Client::new(config),
     };
 
     let writer = DataWriter::new(gcs_storage);
