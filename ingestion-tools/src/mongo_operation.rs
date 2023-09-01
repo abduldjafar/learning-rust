@@ -94,6 +94,9 @@ pub async fn get_mongo_datas(
 
     writer.write_data(&format!("data/from_rust/{}_{}.json",&output,index), &datas).await?;
 
+    println!("===================================================================");
+    println!("write to gs://{}data/from_rust/{}_{}.json Done","quipper-fact-dev",&output,index);
+
 
     Ok(())
 }
