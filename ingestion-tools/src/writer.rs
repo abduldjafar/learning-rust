@@ -98,7 +98,10 @@ impl<T: StorageProvider> DataWriter<T> {
     ) -> Result<(), custom_error::CustomError> {
         let semaphore = Semaphore::new(MAX_CONCURRENT_WRITES);
 
+        log::info!("Starting write {}...",path);
+
         self.storage.write(path, data, &semaphore).await?;
+        log::info!("Done write {}...",path);
         Ok(())
     }
 }
