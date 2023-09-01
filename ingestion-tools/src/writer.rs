@@ -7,7 +7,7 @@ use std::fs::File;
 use std::io::Write;
 use tokio::sync::Semaphore;
 
-const MAX_CONCURRENT_WRITES: usize = 100; // Change this as needed
+const MAX_CONCURRENT_WRITES: usize = 8; // Change this as needed
 
 // Define a trait for the storage provider
 #[async_trait]
