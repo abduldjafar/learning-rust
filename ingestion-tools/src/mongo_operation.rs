@@ -15,6 +15,8 @@ pub async fn get_split_keys(
     collection: String,
     batch_size_in_mb: i32,
 ) -> Result<Vec<(ObjectId, ObjectId)>, Box<dyn std::error::Error>> {
+    env_logger::init();
+
     let split_vector_command = doc! {
         "splitVector": format!("{}.{}", database, collection),
         "keyPattern": doc! { "_id": Bson::Int32(1) },
@@ -22,7 +24,8 @@ pub async fn get_split_keys(
         "maxChunkSize": batch_size_in_mb
     };
 
-    println!("getting partition keys...");
+    log::info!("getting partition keys...");
+    
     let result = db.run_command(split_vector_command, None).await?;
     let option_bson = result.get("splitKeys");
 
@@ -49,7 +52,7 @@ pub async fn get_split_keys(
         .map(|(&current_key, &next_key)| (current_key.clone(), next_key.clone()))
         .collect();
 
-    println!("getting partition keys Done");
+    log::info!("getting partition keys Done");
 
     Ok(tuple_vector)
 }
@@ -60,6 +63,8 @@ pub async fn get_mongo_datas(
     output: String,
     index: i32,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    env_logger::init();
+
     let query = doc! {
         "_id": {
             "$gte": tuple_object_id.0,
@@ -79,7 +84,7 @@ pub async fn get_mongo_datas(
 
     let mut cursor = conn.find(query, None).await?;
 
-    println!("processing batch {:?}...", index);
+    log::info!("processing batch {:?}...", index);
 
     while let Some(doc) = cursor.next().await {
         let real_doc = doc?;
@@ -95,8 +100,8 @@ pub async fn get_mongo_datas(
         )
         .await?;
 
-    println!("===================================================================");
-    println!(
+    log::info!("===================================================================");
+    log::info!(
         "write to gs://{}data/from_rust/{}_{}.json Done",
         "quipper-fact-dev", &output, index
     );

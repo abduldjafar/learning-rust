@@ -14,4 +14,6 @@ serde_json = { version="1.0" }
 clap = { version = "4.3.12", features = ["derive"] }
 google-cloud-storage = "0.13.0"
 async-trait = "0.1.73"
+env_logger = "0.10.0"
+log = "0.4.20"
 
