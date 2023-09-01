@@ -15,7 +15,6 @@ pub async fn get_split_keys(
     collection: String,
     batch_size_in_mb: i32,
 ) -> Result<Vec<(ObjectId, ObjectId)>, Box<dyn std::error::Error>> {
-    env_logger::init();
 
     let split_vector_command = doc! {
         "splitVector": format!("{}.{}", database, collection),
@@ -63,7 +62,7 @@ pub async fn get_mongo_datas(
     output: String,
     index: i32,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    env_logger::init();
+    
 
     let query = doc! {
         "_id": {
