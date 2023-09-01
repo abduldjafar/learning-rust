@@ -2,15 +2,12 @@ mod mongo_operation;
 mod writer;
 
 use clap::Parser;
-use mongo_operation::{get_split_keys, get_mongo_datas};
-use mongodb::{
-    bson::Document, Collection,
-};
+use mongo_operation::{get_mongo_datas, get_split_keys};
+use mongodb::{bson::Document, Collection};
 use std::env;
 use tokio::sync::Semaphore; // Import Semaphore from Tokio
 
 use std::sync::Arc; // Import Arc for reference counting
-
 
 /// ... (Args struct and other imports)
 /// CLI arguments structure
@@ -31,9 +28,6 @@ struct Args {
     batch_size_in_mb: i32,
 }
 
-
-
-
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
@@ -48,12 +42,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let db_clone = args.database.clone();
     let collection_clone = args.collection.clone();
 
-    let splitted_keys = get_split_keys(db, db_clone, collection_clone, args.batch_size_in_mb).await?;
+    let splitted_keys =
+        get_split_keys(db, db_clone, collection_clone, args.batch_size_in_mb).await?;
 
-    let semaphore = Arc::new(Semaphore::new(8)); 
+    let semaphore = Arc::new(Semaphore::new(8));
 
     let mut tasks = Vec::new();
-    
+
     let mut index = 0;
 
     for key in splitted_keys {
@@ -79,6 +74,3 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
-
-
-
