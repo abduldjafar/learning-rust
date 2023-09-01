@@ -5,19 +5,12 @@ use google_cloud_storage::{
 };
 use std::fs::File;
 use std::io::Write;
-use tokio::sync::Semaphore;
 
-const MAX_CONCURRENT_WRITES: usize = 8; // Change this as needed
 
 // Define a trait for the storage provider
 #[async_trait]
 pub trait StorageProvider {
-    async fn write(
-        &self,
-        path: &str,
-        data: &str,
-        semaphore: &Semaphore,
-    ) -> Result<(), Box<dyn std::error::Error>>;
+    async fn write(&self, path: &str, data: &str) -> Result<(), Box<dyn std::error::Error>>;
 }
 
 // Implement GCS storage
@@ -28,14 +21,8 @@ pub struct GcsStorage {
 
 #[async_trait]
 impl StorageProvider for GcsStorage {
-    async fn write(
-        &self,
-        path: &str,
-        data: &str,
-        semaphore: &Semaphore,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    async fn write(&self, path: &str, data: &str) -> Result<(), Box<dyn std::error::Error>> {
         // Implement GCS write logic here
-
 
         let upload_type = UploadType::Simple(Media::new(path.clone().to_string()));
         self.client
@@ -59,20 +46,13 @@ pub struct LocalStorage;
 
 #[async_trait]
 impl StorageProvider for LocalStorage {
-    async fn write(
-        &self,
-        path: &str,
-        data: &str,
-        semaphore: &Semaphore,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    async fn write(&self, path: &str, data: &str) -> Result<(), Box<dyn std::error::Error>> {
         // Implement local file write logic here
-        let permit = semaphore.acquire().await.unwrap();
 
         let mut file = File::create(path)?;
         file.write_all(data.as_bytes())?;
         println!("Writing to local path: {}", path);
 
-        drop(permit);
         Ok(())
     }
 }
@@ -92,9 +72,7 @@ impl<T: StorageProvider> DataWriter<T> {
         path: &str,
         data: &str,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let semaphore = Semaphore::new(MAX_CONCURRENT_WRITES);
-
-        self.storage.write(path, data, &semaphore).await?;
+        self.storage.write(path, data).await?;
         Ok(())
     }
 }
