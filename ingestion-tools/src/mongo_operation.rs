@@ -57,7 +57,7 @@ pub async fn get_mongo_datas(
     tuple_object_id: (ObjectId, ObjectId),
     conn: Collection<Document>,
     index: i32,
-) -> Result<(), custom_error::CustomError> {
+) -> Result<String, custom_error::CustomError> {
     let query = doc! {
         "_id": {
             "$gte": tuple_object_id.0,
@@ -80,5 +80,5 @@ pub async fn get_mongo_datas(
 
     log::info!("processing batch {:?} Done", index);
 
-    Ok(())
+    Ok(datas)
 }

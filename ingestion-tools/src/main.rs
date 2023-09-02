@@ -15,6 +15,7 @@ use std::sync::Arc; // Import Arc and Mutex
 use tokio::sync::Semaphore;
 use writer::{DataWriter, GcsStorage};
 
+
 /// ... (Args struct and other imports)
 /// CLI arguments structure
 #[derive(Parser, Debug)]
@@ -83,17 +84,23 @@ async fn main() -> Result<(), custom_error::CustomError> {
     for key in splitted_keys {
         let conn_clone = conn.clone();
         let output_clone = args.prefix_output_file.clone();
-        //let semaphore_clone = semaphore.clone();
-        let writer_clone = writer.clone(); 
+        let semaphore_clone = semaphore.clone();
+        let writer_clone = writer.clone(); // Clone Arc<Mutex<DataWriter>> for each task
+
+        // Clone the semaphore for each task
 
         let join_handle = tokio::spawn(async move {
-            //let _permit = semaphore_clone.acquire().await.expect("Semaphore error");
-            let output = get_mongo_datas(key, conn_clone, index).await;
-            output
-            
-            
-        });
+            let _permit = semaphore_clone.acquire().await.expect("Semaphore error");
+            let output = get_mongo_datas(key, conn_clone, index).await?;
 
+            writer_clone
+                .write_data(
+                    &format!("data/from_rust/{}_{}.json", &output_clone, index),
+                    &output,
+                )
+                .await
+
+        });
         tasks.push(join_handle);
         index += 1;
     }
