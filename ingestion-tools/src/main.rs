@@ -83,11 +83,11 @@ async fn main() -> Result<(), custom_error::CustomError> {
     for key in splitted_keys {
         let conn_clone = conn.clone();
         let output_clone = args.prefix_output_file.clone();
-        let semaphore_clone = semaphore.clone();
+        //let semaphore_clone = semaphore.clone();
         let writer_clone = writer.clone(); 
 
         let join_handle = tokio::spawn(async move {
-            let _permit = semaphore_clone.acquire().await.expect("Semaphore error");
+            //let _permit = semaphore_clone.acquire().await.expect("Semaphore error");
             let output = get_mongo_datas(key, conn_clone, index).await;
             output
             
