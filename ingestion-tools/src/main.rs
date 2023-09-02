@@ -88,14 +88,10 @@ async fn main() -> Result<(), custom_error::CustomError> {
 
         let join_handle = tokio::spawn(async move {
             let _permit = semaphore_clone.acquire().await.expect("Semaphore error");
-            let output = get_mongo_datas(key, conn_clone, index).await?;
-
-            writer_clone
-                .write_data(
-                    &format!("data/from_rust/{}_{}.json", &output_clone, index),
-                    &output,
-                )
-                .await
+            let output = get_mongo_datas(key, conn_clone, index).await;
+            output
+            
+            
         });
 
         tasks.push(join_handle);

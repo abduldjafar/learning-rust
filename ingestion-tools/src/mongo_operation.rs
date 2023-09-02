@@ -78,5 +78,7 @@ pub async fn get_mongo_datas(
         datas.push_str(&format!("{}\n", json_str));
     }
 
+    log::info!("processing batch {:?} Done", index);
+
     Ok(datas)
 }
